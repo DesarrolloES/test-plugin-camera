@@ -213,6 +213,21 @@ public class CameraActivity extends Fragment {
 
         mCamera = Camera.open(defaultCameraId);
 
+		Camera.Parameters params = mCamera.getParameters();
+		List<String> supportedFlashModes = params.getSupportedFlashModes();
+		Boolean hasTorchMode = false;
+		String search = Camera.Parameters.FLASH_MODE_TORCH;
+		if(supportedFlashModes != null){
+			for(String str: supportedFlashModes) {
+				if(str.trim().contains(search))
+					hasTorchMode = true;
+			}
+		}
+		if ((params.getFlashMode() != null) && (supportedFlashModes != null) && (!supportedFlashModes.isEmpty()) && !(supportedFlashModes.size() == 1 && supportedFlashModes.get(0).equals(Camera.Parameters.FLASH_MODE_OFF)) && hasTorchMode) {
+			params.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+			mCamera.setParameters(params);
+		}
+
         if (cameraParameters != null) {
           mCamera.setParameters(cameraParameters);
         }
