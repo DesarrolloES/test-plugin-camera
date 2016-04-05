@@ -28,6 +28,8 @@
 @property (nonatomic) NSLock *renderLock;
 @property BOOL dragEnabled;
 @property BOOL tapToTakePicture;
+@property (assign,nonatomic) CGFloat x;
+@property (assign,nonatomic) CGFloat y;
 @property (nonatomic, assign) id delegate;
 
 @end

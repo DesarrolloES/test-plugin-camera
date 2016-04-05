@@ -157,6 +157,9 @@
                         x = ((scale * image.extent.size.width) - self.view.frame.size.width )/ 2;
                         y = 0;
                 }
+            
+                self.x = x;
+                self.y = y;
 
                 // scale - translate
                 CGAffineTransform xscale = CGAffineTransformMakeScale(scale, scale);

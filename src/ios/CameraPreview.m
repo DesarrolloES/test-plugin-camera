@@ -4,6 +4,7 @@
 #import <Cordova/CDVInvokedUrlCommand.h>
 
 #import "CameraPreview.h"
+#import "UIImage-Extensions.h"
 
 @implementation CameraPreview
 
@@ -47,7 +48,6 @@
                 }
                 else{
                         self.cameraRenderController.view.alpha = (CGFloat)[command.arguments[8] floatValue];
-
                         [self.viewController.view addSubview:self.cameraRenderController.view];
                 }
 
@@ -133,7 +133,8 @@
         if (self.cameraRenderController != NULL) {
                 CGFloat maxW = (CGFloat)[command.arguments[0] floatValue];
                 CGFloat maxH = (CGFloat)[command.arguments[1] floatValue];
-                [self invokeTakePicture:maxW withHeight:maxH];
+                CGFloat perImg = (CGFloat)[command.arguments[2] floatValue];
+            [self invokeTakePicture:maxW withHeight:maxH withPercen: perImg];
         } else {
                 pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Camera not started"];
                 [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
@@ -185,9 +186,10 @@
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
 - (void) invokeTakePicture {
-        [self invokeTakePicture:0.0 withHeight:0.0];
+    [self invokeTakePicture:0.0 withHeight:0.0 withPercen:0.75];
 }
-- (void) invokeTakePicture:(CGFloat) maxWidth withHeight:(CGFloat) maxHeight {
+
+- (void) invokeTakePicture:(CGFloat) maxWidth withHeight:(CGFloat) maxHeight withPercen:(CGFloat) perImg{
         AVCaptureConnection *connection = [self.sessionManager.stillImageOutput connectionWithMediaType:AVMediaTypeVideo];
         [self.sessionManager.stillImageOutput captureStillImageAsynchronouslyFromConnection:connection completionHandler:^(CMSampleBufferRef sampleBuffer, NSError *error) {
 
@@ -244,6 +246,51 @@
                          }
 
                          CGImageRef finalImage = [self.cameraRenderController.ciContext createCGImage:finalCImage fromRect:finalCImage.extent];
+                     
+                     //UIImage * firstImage = [UIImage imageWithCGImage: finalImage];
+                     //UIImage *capt = [capturedImage imageRotatedByDegrees:90.0];
+                     //UIImage *rotatedImage = [originalImage imageRotatedByDegrees:90.0];
+
+                     
+                     //CGRect cropRect;
+                     //    cropRect = CGRectMake(0.0,0.0,capturedImage.size.width*perImg,capturedImage.size.height);
+                     //    CGImageRef imageRef = CGImageCreateWithImageInRect ([capt CGImage], cropRect);
+                     
+                     //Funcionando
+                     capturedCImage = [[CIImage alloc] initWithCGImage:[capturedImage CGImage]];
+                     CGImageRef imageRef1 = [self.cameraRenderController.ciContext createCGImage:capturedCImage fromRect:capturedCImage.extent];
+                     
+                     UIImage *capture1 = [UIImage imageWithCGImage: imageRef1];
+                     
+                     //{{Imagen Girada y a 1080}} Descomentar para girar
+                     UIImage *capt1 = [capture1 imageRotatedByDegrees:90.0];
+                     //CGImageRef imageRef2 = [capt1 CGImage];
+                     
+                     // Redimensionar Corte
+                     CGFloat a,b,c,d;
+                     UIImage* preImage = [[UIImage alloc] initWithCGImage:previewImage];
+
+                     a = 2*self.cameraRenderController.x + preImage.size.width;
+                     b = 2*self.cameraRenderController.y + preImage.size.height;
+                     
+                     c = (self.cameraRenderController.x * capt1.size.width)/a;
+                     d = (self.cameraRenderController.y * capt1.size.height)/b;
+                     
+                     
+                     // Cortar PerIMG de la imagen
+                     CGRect cropRect;
+                     cropRect = CGRectMake(0.0,d,capt1.size.width*perImg,(capt1.size.height-(2*d)));
+                     //cropRect = CGRectMake(c,0.0,capt1.size.width-(2*c),capt1.size.height*per);
+                     CGImageRef imageRef = CGImageCreateWithImageInRect ([capt1 CGImage], cropRect);
+                     
+                     //Convertir y Girar
+                     
+                     UIImage *capt2 = [UIImage imageWithCGImage: imageRef];
+                     UIImage *capt3 = [capt2 imageRotatedByDegrees:90.0];
+                     CGImageRef imageRef2 = [capt3 CGImage];
+                     
+                     //CGImageRef imageRef2 = [self.cameraRenderController.ciContext createCGImage:capt1 fromRect:capt1.extent];
+                     
 
                          ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];
 
@@ -271,7 +318,7 @@
 
                          // task 1
                          dispatch_group_enter(group);
-                         [library writeImageToSavedPhotosAlbum:previewImage orientation:ALAssetOrientationUp completionBlock:^(NSURL *assetURL, NSError *error) {
+                         [library writeImageToSavedPhotosAlbum:imageRef2 orientation:ALAssetOrientationUp completionBlock:^(NSURL *assetURL, NSError *error) {
                                   if (error) {
                                           NSLog(@"FAILED to save Preview picture.");
                                           photosAlbumError = error;
@@ -283,17 +330,17 @@
                           }];
 
                          //task 2
-                         // dispatch_group_enter(group);
-                         // [library writeImageToSavedPhotosAlbum:finalImage orientation:orientation completionBlock:^(NSURL *assetURL, NSError *error) {
-                         //          if (error) {
-                         //                  NSLog(@"FAILED to save Original picture.");
-                         //                  photosAlbumError = error;
-                         //          } else {
-                         //                  originalPicturePath = [assetURL absoluteString];
-                         //                  NSLog(@"originalPicturePath: %@", originalPicturePath);
-                         //          }
-                         //          dispatch_group_leave(group);
-                         //  }];
+                          dispatch_group_enter(group);
+                          [library writeImageToSavedPhotosAlbum:previewImage orientation:orientation completionBlock:^(NSURL *assetURL, NSError *error) {
+                                   if (error) {
+                                           NSLog(@"FAILED to save Original picture.");
+                                           photosAlbumError = error;
+                                   } else {
+                                           originalPicturePath = [assetURL absoluteString];
+                                           NSLog(@"originalPicturePath: %@", originalPicturePath);
+                                   }
+                                   dispatch_group_leave(group);
+                           }];
 
                          dispatch_group_notify(group, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
                                 NSMutableArray *params = [[NSMutableArray alloc] init];
