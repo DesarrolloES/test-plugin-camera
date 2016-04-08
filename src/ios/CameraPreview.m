@@ -318,7 +318,7 @@
 
                          // task 1
                          dispatch_group_enter(group);
-                         [library writeImageToSavedPhotosAlbum:imageRef2 orientation:ALAssetOrientationUp completionBlock:^(NSURL *assetURL, NSError *error) {
+                         [library writeImageToSavedPhotosAlbum:imageRef orientation:ALAssetOrientationUp completionBlock:^(NSURL *assetURL, NSError *error) {
                                   if (error) {
                                           NSLog(@"FAILED to save Preview picture.");
                                           photosAlbumError = error;
